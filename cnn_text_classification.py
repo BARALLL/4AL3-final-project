@@ -21,19 +21,22 @@ torch.manual_seed(config.SEED)
 
 # Function to tokenize the dataset
 def tokenize_function(examples):
-    return tokenizer(examples['text'], padding='max_length', truncation=True, max_length=512)
+    return tokenizer(examples['text'], padding='max_length', truncation=True, max_length=config.MAX_LENGTH)
 
-# use pickle to store the tokenized version of the dataset because it is long to process each time otherwise
-tokenized_datasets_save_path = PATH / config.PICKLE_FILE
-if (tokenized_datasets_save_path).exists():
-    # load from pickle file if it exists
+
+
+tokenized_datasets_save_path = PATH / config.PICKLE_FILE if config.PICKLE_FILE else None
+
+# use pickle to store the tokenized version of the dataset because it is long to process each time otherwise 
+# (even if datasets library have a built in cache system)
+if tokenized_datasets_save_path and tokenized_datasets_save_path.exists():
+    # load from pickle file if it exists and a path is provided
     print(f"Loading tokenized dataset from {tokenized_datasets_save_path}...")
     with open(tokenized_datasets_save_path, "rb") as f:
         tokenized_datasets = pickle.load(f)
-    
+
     tokenizer = BertTokenizer.from_pretrained(config.PRETRAINED_MODEL)
     vocab = tokenizer.vocab
-    
 else:
     # load from Hugging Face datasets and tokenize
     print("Loading and tokenizing dataset from Hugging Face...")
@@ -42,12 +45,13 @@ else:
     tokenizer = BertTokenizer.from_pretrained(config.PRETRAINED_MODEL)
     vocab = tokenizer.vocab
 
-    tokenized_datasets = dataset.map(tokenize_function, batched=True, )
+    tokenized_datasets = dataset.map(tokenize_function, batched=True)
 
-    # Save the tokenized dataset using pickle
-    print(f"Saving tokenized dataset to {tokenized_datasets_save_path}...")
-    with open(tokenized_datasets_save_path, "wb") as f:
-        pickle.dump(tokenized_datasets, f)
+    # save only if a path is provided
+    if tokenized_datasets_save_path:
+        print(f"Saving tokenized dataset to {tokenized_datasets_save_path}...")
+        with open(tokenized_datasets_save_path, "wb") as f:
+            pickle.dump(tokenized_datasets, f)
 
 
 tokenized_datasets.set_format(type='torch', columns=['input_ids', 'attention_mask', 'label'])
@@ -220,8 +224,8 @@ else:
 
 examples = [
     "This movie was absolutely amazing! I loved every minute of it.",
-    "The flower field was pretty.",
-    "The flower field was pretty!",
+    "The scenery was pretty.",
+    "The scenery was pretty!",
 
     # this is not a proper input, since the model was trained with only positive or negative sentence, not neutral ones
     "This is a completely neutral sentence right?", 

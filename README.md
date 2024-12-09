@@ -15,3 +15,10 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+## Results
+The CNN model achieves great performances:
+- Validation Accuracy: 89.98%
+- Test accuracy: 88.53%
+- Training Loss: 0.275
+- Validation Loss: 0.258
